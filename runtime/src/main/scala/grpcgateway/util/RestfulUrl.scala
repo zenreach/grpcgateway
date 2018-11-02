@@ -2,10 +2,12 @@ package grpcgateway.util
 
 import java.util
 
-import RestfulUrl._
+import grpcgateway.util.RestfulUrl._
+import io.grpc.Status
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.util.{Failure, Try}
 
 /** A container of extracted URI properties */
 trait RestfulUrl {
@@ -16,7 +18,12 @@ trait RestfulUrl {
 }
 
 private final class PlainRestfulUrl(parameters: PathParams) extends RestfulUrl {
-  override def parameter(name: String): String = parameters.get(name).asScala.head
+  override def parameter(name: String): String =
+    Try(parameters.getOrDefault(name, new util.ArrayList[String]()).asScala.head)
+      .recoverWith({
+        case ex : NoSuchElementException => Failure(Status.INVALID_ARGUMENT.withDescription("invalid params")asRuntimeException())
+        case ex : Throwable => Failure(ex)
+      }).get
 }
 
 private final class MergedRestfulUrl(templateParams: TemplateParams, pathParams: PathParams) extends RestfulUrl {
