@@ -1,5 +1,7 @@
 package grpcgateway.handlers
 
+import java.nio.charset.StandardCharsets
+
 import io.grpc.{ManagedChannel, StatusException, StatusRuntimeException}
 import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandler.Sharable
@@ -40,11 +42,11 @@ abstract class GrpcGatewayHandler(channel: ManagedChannel)(implicit ec: Executio
             val buf = req.content()
             val bytes = new Array[Byte](buf.readableBytes())
 
-            try(buf.readBytes(bytes))
+            try buf.readBytes(bytes)
             finally {
               buf.release()
             }
-            new String(bytes)
+            new String(bytes, StandardCharsets.UTF_8)
           }).recoverWith({
             case ex : Throwable =>
               ex.printStackTrace()
